@@ -1,17 +1,40 @@
 package loudsound.events.user;
 
-import loudsound.events.base.KieEvent;
 import loudsound.model.User;
+import org.kie.api.definition.type.Expires;
+import org.kie.api.definition.type.Role;
+import org.kie.api.definition.type.Timestamp;
 
-public class UserTitleChangedEvent extends KieEvent {
-    private final User.Title newTitle;
+import java.io.Serializable;
+import java.util.Date;
 
-    public UserTitleChangedEvent(String causerId, User.Title newTitle) {
-        super(causerId);
-        this.newTitle = newTitle;
+@Role(Role.Type.EVENT)
+@Timestamp("occurred")
+@Expires("20h")
+public class UserTitleChangedEvent implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private final String causerId;
+    private final Date occurred;
+    private final User.Title title;
+
+    public UserTitleChangedEvent(String causerId, User.Title title) {
+        super();
+        this.causerId = causerId;
+        this.title = title;
+        this.occurred = new Date();
     }
 
-    public User.Title getNewTitle() {
-        return newTitle;
+    public String getCauserId() {
+        return causerId;
+    }
+
+    public Date getOccurred() {
+        return occurred;
+    }
+
+    public User.Title getTitle() {
+        return title;
     }
 }
+

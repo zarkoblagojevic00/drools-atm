@@ -1,6 +1,9 @@
 package loudsound.model;
 
+import loudsound.controllers.dtos.NewSongDTO;
+
 import java.util.Date;
+import java.util.UUID;
 
 public class Song {
     public enum Status {
@@ -15,25 +18,22 @@ public class Song {
     private final String artist;
     private final String title;
     private final Date created;
-    private final long duration;
+    private final long length;
     private long likesNumber;
     private long timesListenedNumber;
     private long timesSkippedNumber;
     private Status status;
     private final Genre genre;
 
-    public Song(String artist, String title, long duration, Genre genre) {
-        this.artist = artist;
-        this.title = title;
-        this.created = new Date();
-        this.duration = duration;
-        this.status = Status.OK;
-        this.genre = genre;
-        this.id = createId();
-    }
+    public Song(NewSongDTO newSong) {
+        this.id = UUID.randomUUID().toString();
+        this.artist = newSong.getArtist();
+        this.title = newSong.getTitle();
+        this.length = newSong.getDuration();
+        this.genre = newSong.getGenre();
 
-    private String createId() {
-        return String.format("%s::%s::%s", this.artist, this.title, this.created.getTime());
+        this.created = new Date();
+        this.status = Status.OK;
     }
 
     public String getId() {
@@ -52,8 +52,8 @@ public class Song {
         return created;
     }
 
-    public long getDuration() {
-        return duration;
+    public long getLength() {
+        return length;
     }
 
     public long getLikesNumber() {
@@ -99,7 +99,7 @@ public class Song {
                 ", artist='" + artist + '\'' +
                 ", title='" + title + '\'' +
                 ", created=" + created +
-                ", duration=" + duration +
+                ", duration=" + length +
                 ", likesNumber=" + likesNumber +
                 ", timesListenedNumber=" + timesListenedNumber +
                 ", timesSkippedNumber=" + timesSkippedNumber +

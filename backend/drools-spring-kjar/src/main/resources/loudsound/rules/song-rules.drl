@@ -1,0 +1,83 @@
+package loudsound.rules;
+dialect  "mvel"
+
+import loudsound.model.Song;
+import loudsound.events.song.SongReleasedEvent;
+import loudsound.events.song.SongListeningStartedEvent;
+import loudsound.events.song.SongListeningEndedEvent;
+import loudsound.events.song.SongListenedEvent;
+import loudsound.events.song.SongSkippedEvent;
+import loudsound.events.song.SongStatusChangedEvent;
+
+import org.slf4j.Logger;
+import org.drools.core.spi.KnowledgeHelper;
+
+global org.slf4j.Logger logger;
+
+rule "New song is released"
+    lock-on-active
+    when
+        $song: Song()
+    then
+        insert(new SongReleasedEvent($song.id, $song.artist))
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        logger.debug("New song released: '{} - {}'", $song.artist, $song.title);
+end
+
+rule "Song is listened"
+    no-loop
+    when
+        $song: Song($sid: id)
+        $start: SongListeningStartedEvent($sid == songId, $scauser: causerId)
+        $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[20s] $start)
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongListenedEvent($song.id, $scauser));
+        modify ($song) { listen() };
+        delete($start);
+        delete($end);
+        logger.debug(
+                "Song: '{} - {}' was listened {} times",
+                $song.artist,
+                $song.title,
+                $song.getTimesListenedNumber()
+        );
+end
+
+rule "Song is skipped"
+    no-loop
+    when
+        $song: Song($sid: id)
+        $start: SongListeningStartedEvent($sid == songId, $scauser: causerId)
+        $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[0s, 15s] $start)
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongSkippedEvent($song.id, $scauser));
+        delete($start);
+        delete($end);
+        modify ($song) { skip() };
+        logger.debug(
+                "Song: '{} - {}' was skipped {} times",
+                $song.artist,
+                $song.title,
+                $song.getTimesSkippedNumber()
+        );
+end
+
+rule "Song is declared Boring"
+    no-loop
+    when
+        $song: Song(
+            status == Song.Status.OK,
+            timesListenedNumber > 2,
+            timesSkippedNumber > 1.5 * timesListenedNumber)
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongStatusChangedEvent($song.id, Song.Status.BORING ));
+        modify ($song) { setStatus(Song.Status.BORING) };
+        logger.debug(
+                "Song: '{} - {}' was declared boring",
+                $song.artist,
+                $song.title
+        );
+end

@@ -5,9 +5,7 @@ import loudsound.model.User;
 import loudsound.events.user.UserCreatedEvent;
 import org.slf4j.Logger;
 
-import java.util.List;
-
-
+import org.drools.core.spi.KnowledgeHelper;
 
 global org.slf4j.Logger logger;
 

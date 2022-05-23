@@ -1,5 +1,6 @@
-package loudsound.events.base;
+package loudsound.events.song;
 
+import org.kie.api.definition.type.Expires;
 import org.kie.api.definition.type.Role;
 import org.kie.api.definition.type.Timestamp;
 
@@ -8,15 +9,19 @@ import java.util.Date;
 
 @Role(Role.Type.EVENT)
 @Timestamp("occurred")
-public abstract class KieEvent implements Serializable {
-
+@Expires("20h")
+public class SongReleasedEvent implements Serializable {
     private static final long serialVersionUID = 1L;
+
     private final String causerId;
     private final Date occurred;
+    private final String songId;
 
-    public KieEvent(String causerId) {
+    public SongReleasedEvent(String causerId, String songId) {
+        super();
         this.causerId = causerId;
         this.occurred = new Date();
+        this.songId = songId;
     }
 
     public String getCauserId() {
@@ -26,4 +31,10 @@ public abstract class KieEvent implements Serializable {
     public Date getOccurred() {
         return occurred;
     }
+
+    public String getSongId() {
+        return songId;
+    }
+
 }
+
