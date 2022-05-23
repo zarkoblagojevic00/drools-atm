@@ -1,0 +1,22 @@
+package loudsound.rules;
+dialect  "mvel"
+
+import loudsound.model.User;
+import loudsound.events.user.UserCreatedEvent;
+import org.slf4j.Logger;
+
+import java.util.List;
+
+
+
+global org.slf4j.Logger logger;
+
+rule "New user is registered"
+    lock-on-active
+    when
+        $user: User($username: username)
+    then
+        insert(new UserCreatedEvent($username))
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        logger.debug($user.toString());
+end
