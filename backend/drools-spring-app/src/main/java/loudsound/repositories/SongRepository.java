@@ -1,6 +1,7 @@
 package loudsound.repositories;
 
 import loudsound.controllers.dtos.NewSongDTO;
+import loudsound.controllers.exceptions.EntityNotFoundException;
 import loudsound.controllers.exceptions.InvalidArgumentsException;
 import loudsound.model.Song;
 import org.springframework.context.annotation.Scope;
@@ -29,7 +30,11 @@ public class SongRepository {
     }
 
     public Song getSong(String songId) {
-        return songs.get(songId);
+        Song existingSong = songs.get(songId);
+        if (existingSong == null) {
+            throw new EntityNotFoundException("Song with the given id: " + songId + " does not exist.");
+        }
+        return existingSong;
     }
 
     public Collection<Song> getAllSongs() {

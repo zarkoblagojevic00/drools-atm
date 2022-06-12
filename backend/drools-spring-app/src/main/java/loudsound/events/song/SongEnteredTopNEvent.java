@@ -1,8 +1,6 @@
 package loudsound.events.song;
 
-import org.kie.api.definition.type.Expires;
-import org.kie.api.definition.type.Role;
-import org.kie.api.definition.type.Timestamp;
+import org.kie.api.definition.type.*;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -10,22 +8,19 @@ import java.util.Date;
 @Role(Role.Type.EVENT)
 @Timestamp("occurred")
 @Expires("100h")
-public class SongReleasedEvent implements Serializable {
+@PropertyReactive
+public class SongEnteredTopNEvent implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final String causerId;
     private final Date occurred;
     private final String songId;
+    private boolean revoked;
 
-    public SongReleasedEvent(String causerId, String songId) {
+    public SongEnteredTopNEvent(String songId) {
         super();
-        this.causerId = causerId;
         this.occurred = new Date();
         this.songId = songId;
-    }
-
-    public String getCauserId() {
-        return causerId;
+        this.revoked = false;
     }
 
     public Date getOccurred() {
@@ -36,10 +31,19 @@ public class SongReleasedEvent implements Serializable {
         return songId;
     }
 
+    public boolean isRevoked() {
+        return revoked;
+    }
+
+    @Modifies({"revoked"})
+    public void revoke() {
+        this.revoked = true;
+    }
+
     @Override
     public String toString() {
-        return "SongReleasedEvent{" +
-                "causerId='" + causerId + '\'' +
+        return "SongEnteredTopNEvent{" +
+                "revoked=" + revoked +
                 ", occurred=" + occurred +
                 ", songId='" + songId + '\'' +
                 '}';

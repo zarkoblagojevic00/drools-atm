@@ -1,13 +1,17 @@
 package loudsound.rules;
 dialect  "mvel"
 
+import java.util.List;
+
 import loudsound.model.Song;
 import loudsound.events.song.SongReleasedEvent;
 import loudsound.events.song.SongListeningStartedEvent;
 import loudsound.events.song.SongListeningEndedEvent;
 import loudsound.events.song.SongListenedEvent;
 import loudsound.events.song.SongSkippedEvent;
+import loudsound.events.song.SongLikedEvent;
 import loudsound.events.song.SongStatusChangedEvent;
+import loudsound.events.song.SongEnteredTopNEvent
 
 import org.slf4j.Logger;
 import org.drools.core.spi.KnowledgeHelper;
@@ -29,10 +33,10 @@ rule "Song is listened"
     when
         $song: Song($sid: id)
         $start: SongListeningStartedEvent($sid == songId, $scauser: causerId)
-        $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[20s] $start)
+        $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[5s] $start)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongListenedEvent($song.id, $scauser));
+        insert(new SongListenedEvent($scauser, $song.id));
         modify ($song) { listen() };
         delete($start);
         delete($end);
@@ -49,10 +53,10 @@ rule "Song is skipped"
     when
         $song: Song($sid: id)
         $start: SongListeningStartedEvent($sid == songId, $scauser: causerId)
-        $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[0s, 15s] $start)
+        $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[0s, 5s] $start)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongSkippedEvent($song.id, $scauser));
+        insert(new SongSkippedEvent($scauser, $song.id));
         delete($start);
         delete($end);
         modify ($song) { skip() };
@@ -65,19 +69,156 @@ rule "Song is skipped"
 end
 
 rule "Song is declared Boring"
-    no-loop
+    lock-on-active
     when
         $song: Song(
             status == Song.Status.OK,
-            timesListenedNumber > 2,
+            timesListenedNumber > 1,
             timesSkippedNumber > 1.5 * timesListenedNumber)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
         insert(new SongStatusChangedEvent($song.id, Song.Status.BORING ));
         modify ($song) { setStatus(Song.Status.BORING) };
         logger.debug(
-                "Song: '{} - {}' was declared boring",
+                "Song: '{} - {}' was declared {}",
+                $song.artist,
+                $song.title,
+                $song.status
+        );
+end
+
+rule "Song is redeclared Ok"
+    lock-on-active
+    when
+        $song: Song(
+            $sid: id,
+            status == Song.Status.BORING
+        )
+        $listenedNum: Number() from accumulate(
+            $e1: SongListenedEvent(songId == $sid)
+            over window:time( 48h ),
+            count($e1)
+        )
+        $skippedNum: Number() from accumulate(
+            $e2: SongSkippedEvent(songId == $sid)
+            over window:time( 48h ),
+            count($e2)
+        )
+        eval($listenedNum.intValue() > 2 * $skippedNum.intValue())
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongStatusChangedEvent($song.id, Song.Status.OK ));
+        modify ($song) { setStatus(Song.Status.OK) };
+        logger.debug(
+                "Song: '{} - {}' was declared {}",
+                $song.artist,
+                $song.title,
+                $song.status
+        );
+end
+
+rule "Song entered top N chart (when there are fewer songs than N)"
+    when
+        Number(intValue <= 3) from accumulate (
+            $e: SongReleasedEvent(),
+            count($e)
+        )
+        $currentTopNSongIds: List() from accumulate(
+            SongEnteredTopNEvent($topNSongId: songId, !revoked),
+            collectList($topNSongId)
+        )
+        $song: Song(id not memberOf $currentTopNSongIds)
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongEnteredTopNEvent($song.id));
+        logger.debug(
+                "Song: '{} - {}' reached topN",
                 $song.artist,
                 $song.title
+        );
+end
+
+rule "Song entered top N chart (when there are more songs than N)"
+    when
+        $currentTopNSongIds: List() from accumulate(
+            SongEnteredTopNEvent($topNSongId: songId, !revoked),
+            collectList($topNSongId)
+        )
+        $lastSongInCurrentTopN:
+            Song(id memberOf $currentTopNSongIds, $lowestListens: timesListenedNumber)
+            not Song(id memberOf $currentTopNSongIds, timesListenedNumber < $lowestListens)
+        $topSongInCandidates:
+            Song(id not memberOf $currentTopNSongIds, status == Song.Status.OK, $highestListens: timesListenedNumber)
+            not Song(id not memberOf $currentTopNSongIds, status == Song.Status.OK, timesListenedNumber > $highestListens)
+        eval($topSongInCandidates.timesListenedNumber > $lastSongInCurrentTopN.timesListenedNumber)
+        $lastSongInCurrentTopNEvent: SongEnteredTopNEvent(songId == $lastSongInCurrentTopN.id, !revoked)
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+
+        insert(new SongEnteredTopNEvent($topSongInCandidates.id));
+        logger.debug(
+                "Song: '{} - {}' reached topN",
+                $topSongInCandidates.artist,
+                $topSongInCandidates.title
+        );
+
+        modify ($lastSongInCurrentTopNEvent) { revoke() };
+        logger.debug(
+                "Song: '{} - {}' was revoked from topN",
+                $lastSongInCurrentTopN.artist,
+                $lastSongInCurrentTopN.title
+        );
+end
+
+rule "Song is declared Popular"
+    lock-on-active
+    when
+        $song: Song(
+            $sid: id,
+            status == Song.Status.OK
+        )
+        Number(intValue == 1) from accumulate(
+            $e1: SongEnteredTopNEvent(songId == $sid, !revoked)
+            over window:time( 24h ),
+            count($e1)
+        )
+        Number(intValue > 10) from accumulate(
+            $e2: SongLikedEvent(songId == $sid)
+            over window:time( 24h ),
+            count($e2)
+        )
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongStatusChangedEvent($song.id, Song.Status.POPULAR ));
+        modify ($song) { setStatus(Song.Status.POPULAR) };
+        logger.debug(
+                "Song: '{} - {}' was declared {}}",
+                $song.artist,
+                $song.title,
+                $song.status
+        );
+end
+
+rule "Song is not Popular anymore"
+    lock-on-active
+    when
+        $song: Song(
+            $sid: id,
+            status == Song.Status.POPULAR
+        )
+        Number(intValue >= 1) from accumulate(
+            $e: SongEnteredTopNEvent(songId == $sid, revoked)
+            over window:time( 24h ),
+            count($e)
+        )
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new SongStatusChangedEvent($song.id, Song.Status.OK ));
+        modify ($song) { setStatus(Song.Status.OK) };
+        logger.debug(
+                "Song: '{} - {}' was declared {}}",
+                $song.artist,
+                $song.title,
+                $song.status
         );
 end

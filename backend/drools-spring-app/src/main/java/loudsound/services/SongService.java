@@ -40,7 +40,7 @@ public class SongService {
         existingSong.like();
         songRepo.update(existingSong);
 
-        kieSession.insert(new SongLikedEvent(songId, username));
+        kieSession.insert(new SongLikedEvent(username, songId));
         kieSession.fireAllRules();
 
         return existingSong;

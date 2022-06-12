@@ -1,5 +1,6 @@
 package loudsound.repositories;
 
+import loudsound.controllers.exceptions.EntityNotFoundException;
 import loudsound.controllers.exceptions.InvalidArgumentsException;
 import loudsound.model.User;
 import org.springframework.context.annotation.Scope;
@@ -28,7 +29,11 @@ public class UserRepository {
     }
 
     public User getUser(String username) {
-        return users.get(username);
+        User existingUser = users.get(username);
+        if (existingUser == null) {
+            throw new EntityNotFoundException("User with given username: " + username + " does not exist.");
+        }
+        return existingUser;
     }
 
     public Collection<User> getAllUsers() {

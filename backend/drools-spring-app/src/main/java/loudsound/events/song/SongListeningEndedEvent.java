@@ -9,7 +9,7 @@ import java.util.Date;
 
 @Role(Role.Type.EVENT)
 @Timestamp("occurred")
-@Expires("20h")
+@Expires("100h")
 public class SongListeningEndedEvent implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -37,4 +37,12 @@ public class SongListeningEndedEvent implements Serializable {
         return songId;
     }
 
+    @Override
+    public String toString() {
+        return "SongListeningEndedEvent{" +
+                "causerId='" + causerId + '\'' +
+                ", occurred=" + occurred +
+                ", songId='" + songId + '\'' +
+                '}';
+    }
 }

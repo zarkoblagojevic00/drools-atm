@@ -1,10 +1,14 @@
 package loudsound.model;
 
+import org.kie.api.definition.type.Modifies;
+import org.kie.api.definition.type.PropertyReactive;
+
+@PropertyReactive
 public class User {
     public enum Title {
         ANONYMOUS, RISING_STAR, LEGEND
     }
-    private String username;
+    private final String username;
     private Title title;
     private boolean isPopular;
 
@@ -18,14 +22,11 @@ public class User {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public Title getTitle() {
         return title;
     }
 
+    @Modifies({"title"})
     public void setTitle(Title title) {
         this.title = title;
     }
@@ -34,6 +35,7 @@ public class User {
         return isPopular;
     }
 
+    @Modifies("popular")
     public void setPopular(boolean popular) {
         isPopular = popular;
     }

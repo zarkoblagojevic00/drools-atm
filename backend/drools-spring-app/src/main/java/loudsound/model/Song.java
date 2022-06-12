@@ -1,10 +1,13 @@
 package loudsound.model;
 
 import loudsound.controllers.dtos.NewSongDTO;
+import org.kie.api.definition.type.Modifies;
+import org.kie.api.definition.type.PropertyReactive;
 
 import java.util.Date;
 import java.util.UUID;
 
+@PropertyReactive
 public class Song {
     public enum Status {
         POPULAR, OK, BORING
@@ -19,11 +22,12 @@ public class Song {
     private final String title;
     private final Date created;
     private final long length;
+    private final Genre genre;
+
     private long likesNumber;
     private long timesListenedNumber;
     private long timesSkippedNumber;
     private Status status;
-    private final Genre genre;
 
     public Song(NewSongDTO newSong) {
         this.id = UUID.randomUUID().toString();
@@ -56,10 +60,15 @@ public class Song {
         return length;
     }
 
+    public Genre getGenre() {
+        return genre;
+    }
+
     public long getLikesNumber() {
         return likesNumber;
     }
 
+    @Modifies({"likesNumber"})
     public void like() {
         this.likesNumber++;
     }
@@ -68,6 +77,7 @@ public class Song {
         return timesListenedNumber;
     }
 
+    @Modifies({"timesListenedNumber"})
     public void listen() {
         this.timesListenedNumber++;
     }
@@ -76,6 +86,7 @@ public class Song {
         return timesSkippedNumber;
     }
 
+    @Modifies({"timesSkippedNumber"})
     public void skip() {
         this.timesSkippedNumber++;
     }
@@ -84,12 +95,9 @@ public class Song {
         return status;
     }
 
+    @Modifies({"status"})
     public void setStatus(Status status) {
         this.status = status;
-    }
-
-    public Genre getGenre() {
-        return genre;
     }
 
     @Override

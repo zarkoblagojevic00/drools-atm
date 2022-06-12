@@ -10,7 +10,7 @@ import java.util.Date;
 
 @Role(Role.Type.EVENT)
 @Timestamp("occurred")
-@Expires("20h")
+@Expires("100h")
 public class SongStatusChangedEvent implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -35,6 +35,12 @@ public class SongStatusChangedEvent implements Serializable {
 
     public Song.Status getStatus() {
         return status;
+    }
+
+    public SongStatusChangedEvent(Date occurred, String songId, Song.Status status) {
+        this.occurred = occurred;
+        this.songId = songId;
+        this.status = status;
     }
 }
 

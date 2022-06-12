@@ -8,7 +8,7 @@ import java.util.Date;
 
 @Role(Role.Type.EVENT)
 @Timestamp("occurred")
-@Expires("20h")
+@Expires("100h")
 public class SongListeningStartedEvent {
     private static final long serialVersionUID = 1L;
 
@@ -36,4 +36,12 @@ public class SongListeningStartedEvent {
         return songId;
     }
 
+    @Override
+    public String toString() {
+        return "SongListeningStartedEvent{" +
+                "causerId='" + causerId + '\'' +
+                ", occurred=" + occurred +
+                ", songId='" + songId + '\'' +
+                '}';
+    }
 }
