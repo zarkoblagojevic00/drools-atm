@@ -3,6 +3,15 @@ dialect  "mvel"
 
 import loudsound.model.User;
 import loudsound.events.user.UserCreatedEvent;
+import loudsound.events.user.UserTitleChangedEvent;
+import loudsound.events.user.UserBecamePopularEvent;
+
+import loudsound.model.Song;
+import loudsound.events.song.SongReleasedEvent;
+import loudsound.events.song.SongLikedEvent;
+import loudsound.events.song.SongListenedEvent;
+import loudsound.events.song.SongEnteredTopNEvent;
+
 import org.slf4j.Logger;
 
 import org.drools.core.spi.KnowledgeHelper;
@@ -16,5 +25,145 @@ rule "New user is registered"
     then
         insert(new UserCreatedEvent($username))
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        logger.debug($user.toString());
+        logger.debug("New user: {}", $user);
+end
+
+rule "User is declared a Rising Star (song quantity, listens and likes)"
+    when
+        $user :User($uid: username, title == User.Title.ANONYMOUS)
+        // timeout - 10h
+        Number(intValue == 0) from accumulate (
+            $e: UserTitleChangedEvent(causerId == $uid, title == User.Title.RISING_STAR)
+            over window:time( 10h ),
+            count($e)
+        )
+        $userReleasedSongIds: List(this.size() > 2) from accumulate(
+            Song($sid: id, artist == $uid),
+            collectList($sid)
+        )
+        Number(intValue > 5) from accumulate (
+            $e1: SongListenedEvent(songId memberOf $userReleasedSongIds)
+            over window:time( 730h ),
+            count($e1)
+        )
+        Number(intValue > 5) from accumulate (
+            $e2: SongLikedEvent(songId memberOf $userReleasedSongIds)
+            over window:time( 730h ),
+            count($e2)
+        )
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new UserTitleChangedEvent($uid, User.Title.RISING_STAR ));
+        modify ($user) { setTitle(User.Title.RISING_STAR) };
+        logger.debug(
+                "Artist: {} was declared {}",
+                $user.username,
+                $user.title
+        );
+end
+
+rule "User is declared a Rising Star (top chart activity)"
+    when
+        $user :User($uid: username, title == User.Title.ANONYMOUS)
+        // timeout - 10h
+        Number(intValue == 0) from accumulate (
+            $e: UserTitleChangedEvent(causerId == $uid, title == User.Title.RISING_STAR)
+            over window:time( 10h ),
+            count($e)
+        )
+        $userReleasedSongIds: List(this.size() > 2) from accumulate(
+            Song($sid: id, artist == $uid),
+            collectList($sid)
+        )
+        Number(intValue > 2) from accumulate(
+            $e: SongEnteredTopNEvent(songId memberOf $userReleasedSongIds)
+            over window:time ( 4380h ),
+            count($e)
+        )
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new UserTitleChangedEvent($uid, User.Title.RISING_STAR ));
+        modify ($user) { setTitle(User.Title.RISING_STAR) };
+        logger.debug(
+                "Artist: {} was declared {}",
+                $user.username,
+                $user.title
+        );
+end
+
+rule "User is revoked the title of a Rising Star"
+    when
+        $user: User($uid: username, title == User.Title.RISING_STAR)
+        $userReleasedSongIds: List(this.size() > 2) from accumulate(
+            Song($sid: id, artist == $uid),
+            collectList($sid)
+        )
+        Number(intValue == 0) from accumulate(
+            $e: SongReleasedEvent(causerId == $uid)
+            over window:time ( 2m ),
+            count($e)
+        )
+        $userTotalListens: Number() from accumulate(
+            Song(
+                id memberOf $userReleasedSongIds,
+                $listens: timesListenedNumber),
+            sum($listens)
+        )
+        $userTotalLikes: Number() from accumulate(
+            Song(
+                id memberOf $userReleasedSongIds,
+                $likes: likesNumber),
+            sum($likes)
+        )
+        $totalListensInPastPeriod:
+            Number((doubleValue / ($userTotalListens - doubleValue)) < 0.5) from accumulate(
+            $e: SongListenedEvent(songId memberOf $userReleasedSongIds)
+            over window:time ( 2m ),
+            count($e)
+        )
+        $totalLikesInPastPeriod:
+            Number((doubleValue / ($userTotalLikes - doubleValue)) < 0.6) from accumulate(
+            $e: SongLikedEvent(songId memberOf $userReleasedSongIds)
+            over window:time ( 2m ),
+            count($e)
+        )
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new UserTitleChangedEvent($uid, User.Title.ANONYMOUS ));
+        modify ($user) { setTitle(User.Title.ANONYMOUS) };
+        logger.debug(
+                "Artist: {} was declared {}",
+                $user.username,
+                $user.title
+        );
+end
+
+rule "User is declared a Legend"
+    when
+        $user: User($uid: username, title == User.Title.RISING_STAR)
+        $userReleasedSongIds: List(this.size() > 2) from accumulate(
+            Song($sid: id, artist == $uid),
+            collectList($sid)
+        )
+        $userTotalListens: Number(intValue > 10) from accumulate(
+            Song(
+                id memberOf $userReleasedSongIds,
+                $listens: timesListenedNumber),
+            sum($listens)
+        )
+        $userTotalLikes: Number(intValue > 20) from accumulate(
+            Song(
+                id memberOf $userReleasedSongIds,
+                $likes: likesNumber),
+            sum($likes)
+        )
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        insert(new UserTitleChangedEvent($uid, User.Title.LEGEND ));
+        modify ($user) { setTitle(User.Title.LEGEND) };
+        logger.debug(
+                "Artist: {} was declared {}",
+                $user.username,
+                $user.title
+        );
 end

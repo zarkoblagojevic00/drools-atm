@@ -23,7 +23,7 @@ rule "New song is released"
     when
         $song: Song()
     then
-        insert(new SongReleasedEvent($song.id, $song.artist))
+        insert(new SongReleasedEvent($song.artist, $song.id))
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
         logger.debug("New song released: '{} - {}'", $song.artist, $song.title);
 end
