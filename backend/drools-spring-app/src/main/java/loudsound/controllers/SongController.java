@@ -3,6 +3,7 @@ package loudsound.controllers;
 import loudsound.controllers.dtos.NewSongDTO;
 import loudsound.model.Song;
 import loudsound.services.SongService;
+import loudsound.services.UserFeedDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +44,11 @@ public class SongController {
     @PutMapping("/{songId}/end/{username}")
     public ResponseEntity<Song> endSong(@PathVariable String songId, @PathVariable String username) {
         return ResponseEntity.ok(songService.endSong(songId, username));
+    }
+
+    @GetMapping("/feed/{username}")
+    public ResponseEntity<UserFeedDTO> getUserFeed(@PathVariable String username) {
+        return ResponseEntity.ok(songService.getSongsForUser(username));
     }
 
 }

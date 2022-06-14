@@ -28,6 +28,22 @@ rule "New song is released"
         logger.debug("New song released: '{} - {}'", $song.artist, $song.title);
 end
 
+rule "Song is liked"
+    lock-on-active
+    when
+        $song: Song($sid: id)
+        $e: SongLikedEvent($song.id == songId)
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        modify ($song) { like() };
+        logger.debug(
+                "Song: '{} - {}' was liked {} times",
+                $song.artist,
+                $song.title,
+                $song.getLikesNumber()
+        );
+end
+
 rule "Song is listened"
     no-loop
     when

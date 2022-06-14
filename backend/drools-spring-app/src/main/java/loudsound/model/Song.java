@@ -13,16 +13,11 @@ public class Song {
         POPULAR, OK, BORING
     }
 
-    public enum Genre {
-        ROCK, METAL, JAZZ, BLUES, RAP, FOLK
-    }
-
     private final String id;
     private final String artist;
     private final String title;
     private final Date created;
     private final long length;
-    private final Genre genre;
 
     private long likesNumber;
     private long timesListenedNumber;
@@ -34,7 +29,6 @@ public class Song {
         this.artist = newSong.getArtist();
         this.title = newSong.getTitle();
         this.length = newSong.getDuration();
-        this.genre = newSong.getGenre();
 
         this.created = new Date();
         this.status = Status.OK;
@@ -58,10 +52,6 @@ public class Song {
 
     public long getLength() {
         return length;
-    }
-
-    public Genre getGenre() {
-        return genre;
     }
 
     public long getLikesNumber() {
@@ -107,12 +97,11 @@ public class Song {
                 ", artist='" + artist + '\'' +
                 ", title='" + title + '\'' +
                 ", created=" + created +
-                ", duration=" + length +
+                ", length=" + length +
                 ", likesNumber=" + likesNumber +
                 ", timesListenedNumber=" + timesListenedNumber +
                 ", timesSkippedNumber=" + timesSkippedNumber +
                 ", status=" + status +
-                ", genre=" + genre +
                 '}';
     }
 }

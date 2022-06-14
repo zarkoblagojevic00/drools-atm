@@ -1,5 +1,6 @@
 package loudsound.model;
 
+import loudsound.controllers.dtos.NewUserDTO;
 import org.kie.api.definition.type.Modifies;
 import org.kie.api.definition.type.PropertyReactive;
 
@@ -8,18 +9,30 @@ public class User {
     public enum Title {
         ANONYMOUS, RISING_STAR, LEGEND
     }
+
+    public enum Genre {
+        ROCK, METAL, JAZZ, BLUES, RAP, COUNTRY
+    }
+
+
     private final String username;
     private Title title;
     private boolean isPopular;
+    private final Genre genre;
 
-    public User(String username) {
-        this.username = username;
+    public User(NewUserDTO newUser) {
+        this.username = newUser.getUsername();
+        this.genre = newUser.getGenre();
         this.title = Title.ANONYMOUS;
         this.isPopular = false;
     }
 
     public String getUsername() {
         return username;
+    }
+
+    public Genre getGenre() {
+        return genre;
     }
 
     public Title getTitle() {
@@ -46,6 +59,7 @@ public class User {
                 "username='" + username + '\'' +
                 ", title=" + title +
                 ", isPopular=" + isPopular +
+                ", genre=" + genre +
                 '}';
     }
 }

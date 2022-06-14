@@ -22,8 +22,9 @@ public class SongRepository {
     }
 
     public Song release(NewSongDTO newSong) {
-        if (checkIfSongExists(newSong))
+        if (checkIfSongExists(newSong)) {
             throw new InvalidArgumentsException("Song with the same title and artist already exists.");
+        }
         Song song = new Song(newSong);
         songs.put(song.getId(), song);
         return song;

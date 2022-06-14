@@ -2,20 +2,15 @@ package loudsound.controllers.dtos;
 
 import loudsound.model.Song;
 
-import java.util.Date;
-
 public class NewSongDTO {
     private final String artist;
     private final String title;
     private final long duration;
-    private final Song.Genre genre;
 
-
-    public NewSongDTO(String artist, String title, Date created, long duration, Song.Genre genre) {
+    public NewSongDTO(String artist, String title, long duration) {
         this.artist = artist;
         this.title = title;
         this.duration = duration;
-        this.genre = genre;
     }
 
     public String getArtist() {
@@ -28,10 +23,6 @@ public class NewSongDTO {
 
     public long getDuration() {
         return duration;
-    }
-
-    public Song.Genre getGenre() {
-        return genre;
     }
 
     public boolean isSameAs(Song song) {

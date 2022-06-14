@@ -1,13 +1,11 @@
 package loudsound.controllers;
 
+import loudsound.controllers.dtos.NewUserDTO;
 import loudsound.model.User;
 import loudsound.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/users")
@@ -19,8 +17,8 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping("/{username}")
-    public ResponseEntity<User> registerUser(@PathVariable String username) {
-        return ResponseEntity.ok(userService.registerUser(username));
+    @PostMapping()
+    public ResponseEntity<User> registerUser(@RequestBody NewUserDTO dto) {
+        return ResponseEntity.ok(userService.registerUser(dto));
     }
 }

@@ -1,5 +1,6 @@
 package loudsound.repositories;
 
+import loudsound.controllers.dtos.NewUserDTO;
 import loudsound.controllers.exceptions.EntityNotFoundException;
 import loudsound.controllers.exceptions.InvalidArgumentsException;
 import loudsound.model.User;
@@ -20,11 +21,11 @@ public class UserRepository {
         users = new HashMap<>();
     }
 
-    public User register(String username) {
-        if (users.containsKey(username))
+    public User register(NewUserDTO newUserDTO) {
+        if (users.containsKey(newUserDTO.getUsername()))
             throw new InvalidArgumentsException("User with given username already exists.");
-        User user = new User(username);
-        users.put(username, user);
+        User user = new User(newUserDTO);
+        users.put(user.getUsername(), user);
         return user;
     }
 
