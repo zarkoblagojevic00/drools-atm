@@ -44,8 +44,10 @@ public class UserService {
 
     private List<NewUserDTO> getInitUsers() {
         return Arrays.asList(
-                new NewUserDTO("Hedonist", User.Genre.ROCK),
+                new NewUserDTO("test", User.Genre.ROCK),
+                new NewUserDTO("Filler", User.Genre.ROCK),
                 new NewUserDTO("Arctic Monkeys", User.Genre.ROCK),
+                new NewUserDTO("The Strokes", User.Genre.ROCK),
                 new NewUserDTO("John Coltrane", User.Genre.JAZZ),
                 new NewUserDTO("Eminem", User.Genre.RAP),
                 new NewUserDTO("BB King", User.Genre.BLUES),

@@ -11,7 +11,7 @@ import loudsound.events.song.SongListenedEvent;
 import loudsound.events.song.SongSkippedEvent;
 import loudsound.events.song.SongLikedEvent;
 import loudsound.events.song.SongStatusChangedEvent;
-import loudsound.events.song.SongEnteredTopNEvent
+import loudsound.events.song.SongEnteredTopNEvent;
 
 import org.slf4j.Logger;
 import org.drools.core.spi.KnowledgeHelper;
@@ -29,9 +29,9 @@ rule "New song is released"
 end
 
 rule "Song is liked"
-    lock-on-active
+    no-loop
     when
-        $song: Song($sid: id)
+        $song: Song($sid: id) @Watch(!likesNumber)
         $e: SongLikedEvent($song.id == songId)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
@@ -47,7 +47,7 @@ end
 rule "Song is listened"
     no-loop
     when
-        $song: Song($sid: id)
+        $song: Song($sid: id) @Watch(!timesListenedNumber)
         $start: SongListeningStartedEvent($sid == songId, $scauser: causerId)
         $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[5s] $start)
     then
@@ -67,7 +67,7 @@ end
 rule "Song is skipped"
     no-loop
     when
-        $song: Song($sid: id)
+        $song: Song($sid: id) @Watch(!timesSkippedNumber)
         $start: SongListeningStartedEvent($sid == songId, $scauser: causerId)
         $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[0s, 5s] $start)
     then
@@ -115,12 +115,11 @@ rule "Song is redeclared Ok"
             over window:time( 48h ),
             count($e1)
         )
-        $skippedNum: Number() from accumulate(
+        $skippedNum: Number($listenedNum > 2 * intValue) from accumulate(
             $e2: SongSkippedEvent(songId == $sid)
             over window:time( 48h ),
             count($e2)
         )
-        eval($listenedNum.intValue() > 2 * $skippedNum.intValue())
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
         insert(new SongStatusChangedEvent($song.id, Song.Status.OK ));
@@ -160,15 +159,34 @@ rule "Song entered top N chart (when there are more songs than N)"
             SongEnteredTopNEvent($topNSongId: songId, !revoked),
             collectList($topNSongId)
         )
-        $lastSongInCurrentTopN:
-            Song(id memberOf $currentTopNSongIds, $lowestListens: timesListenedNumber)
-            not Song(id memberOf $currentTopNSongIds, timesListenedNumber < $lowestListens)
-        $topSongInCandidates:
-            Song(id not memberOf $currentTopNSongIds, status == Song.Status.OK, $highestListens: timesListenedNumber)
-            not Song(id not memberOf $currentTopNSongIds, status == Song.Status.OK, timesListenedNumber > $highestListens)
-        eval($topSongInCandidates.timesListenedNumber > $lastSongInCurrentTopN.timesListenedNumber)
+        $lastSongInCurrentTopN: Song() from accumulate(
+            $currentTopNSong: Song(id memberOf $currentTopNSongIds, $currentListens: timesListenedNumber),
+            init ( Song min = null; ),
+            action (
+                if (min == null || min.timesListenedNumber > $currentListens) {
+                    min = $currentTopNSong;
+                }
+            ),
+            result( min )
+        )
+        $topSongInCandidates: Song(timesListenedNumber > $lastSongInCurrentTopN.timesListenedNumber) from accumulate(
+            $currentCandidatesNSong: Song(id not memberOf $currentTopNSongIds, status == Song.Status.OK, $currentListens: timesListenedNumber),
+            init ( Song max = null; ),
+            action (
+                if (max == null || max.timesListenedNumber < $currentListens) {
+                  max = $currentCandidatesNSong;
+                }
+            ),
+            result( max )
+        )
         $lastSongInCurrentTopNEvent: SongEnteredTopNEvent(songId == $lastSongInCurrentTopN.id, !revoked)
     then
+//        for (Object o: $currentTopNSongIds) {
+//            System.out.println(o);
+//        }
+//        System.out.println("------------------------------------------------------------");
+//        System.out.println("Last in top N: " + $lastSongInCurrentTopN);
+//        System.out.println("First in cand: " + $topSongInCandidates);
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
 
         insert(new SongEnteredTopNEvent($topSongInCandidates.id));

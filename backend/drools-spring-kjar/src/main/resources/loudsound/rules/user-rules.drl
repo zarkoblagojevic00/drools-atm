@@ -100,7 +100,7 @@ rule "User is revoked the title of a Rising Star"
         )
         Number(intValue == 0) from accumulate(
             $e: SongReleasedEvent(causerId == $uid)
-            over window:time ( 2m ),
+            over window:time ( 10m ),
             count($e)
         )
         $userTotalListens: Number() from accumulate(
@@ -118,13 +118,13 @@ rule "User is revoked the title of a Rising Star"
         $totalListensInPastPeriod:
             Number((doubleValue / ($userTotalListens - doubleValue)) < 0.5) from accumulate(
             $e: SongListenedEvent(songId memberOf $userReleasedSongIds)
-            over window:time ( 2m ),
+            over window:time ( 10m ),
             count($e)
         )
         $totalLikesInPastPeriod:
             Number((doubleValue / ($userTotalLikes - doubleValue)) < 0.6) from accumulate(
             $e: SongLikedEvent(songId memberOf $userReleasedSongIds)
-            over window:time ( 2m ),
+            over window:time ( 10m ),
             count($e)
         )
     then

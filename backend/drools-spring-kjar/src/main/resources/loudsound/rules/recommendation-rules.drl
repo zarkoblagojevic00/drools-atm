@@ -1,0 +1,220 @@
+package loudsound.rules;
+dialect  "mvel"
+
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Collectors;
+import java.util.Collections;
+
+import loudsound.model.Song;
+import loudsound.events.song.SongReleasedEvent;
+import loudsound.events.song.SongListeningStartedEvent;
+import loudsound.events.song.SongListeningEndedEvent;
+import loudsound.events.song.SongListenedEvent;
+import loudsound.events.song.SongSkippedEvent;
+import loudsound.events.song.SongLikedEvent;
+import loudsound.events.song.SongStatusChangedEvent;
+
+import loudsound.model.User;
+import loudsound.events.user.UserTitleChangedEvent;
+
+import loudsound.services.FeedCreator;
+
+import org.slf4j.Logger;
+import org.drools.core.spi.KnowledgeHelper;
+
+global org.slf4j.Logger logger;
+global loudsound.services.FeedCreator feedCreator;
+
+function List getTopNSongsByListens(List songs, int n) {
+    return  (List) songs.stream()
+            .sorted((a, b) -> {
+                Song aSong = (Song) a;
+                Song bSong = (Song) b;
+                return (int) (bSong.getTimesListenedNumber() - aSong.getTimesListenedNumber());
+            })
+            .limit(n)
+            .collect(Collectors.toList());
+}
+
+rule "Recommend songs of an artist popular with current user and a Legend of same genre"
+    when
+        $currentUser: User($cuid: username)
+        $artist: User(username != $cuid, title == User.Title.RISING_STAR, $aid: username)
+        $artistSongIds: List() from accumulate(
+            $song: Song($sid: id, artist == $aid),
+            collectList($sid)
+        )
+        Number(intValue > 3) from accumulate(
+            $e: SongLikedEvent(causerId == $cuid, songId memberOf $artistSongIds)
+            over window:time ( 240h ),
+            count($e)
+        )
+        Number(intValue > 2) from accumulate(
+            $e: SongListenedEvent(causerId == $cuid, songId memberOf $artistSongIds)
+            over window:time ( 240h ),
+            count($e)
+        )
+        $artistSongs: List() from collect(Song(id memberOf $artistSongIds, status != Song.Status.BORING))
+        $artistSongsNotListenedByCU : List() from accumulate(
+            $song: Song($sid: id, artist == $aid, status != Song.Status.BORING) and
+            not SongListenedEvent(songId == $sid, causerId == $cuid),
+            collectList($song)
+        )
+        $legendsInSameGenreIds: List() from accumulate(
+            User(genre == $artist.genre, title == User.Title.LEGEND, $lid: username),
+            collectList($lid)
+        )
+        $legendsInSameGenreSongs: List() from collect(Song(artist memberOf $legendsInSameGenreIds, status != Song.Status.BORING))
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        Set recommended = new HashSet();
+        recommended.addAll(getTopNSongsByListens($artistSongs, 2));
+        recommended.addAll(getTopNSongsByListens($artistSongsNotListenedByCU, 2));
+        recommended.addAll(getTopNSongsByListens($legendsInSameGenreSongs, 2));
+        feedCreator.updateRecommendations($cuid, new ArrayList(recommended));
+end
+
+rule "Recommend songs of a genre popular with current user that strives to be Rising star"
+    when
+        $currentUser: User(title == User.Title.ANONYMOUS, $cuid: username, $genre: genre)
+        exists Song(artist == $cuid)
+        $artistsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, $lid: username),
+            collectList($lid)
+        )
+        $sameGenreSongsIds: List() from accumulate (
+            Song(artist memberOf $artistsInSameGenreIds, status != Song.Status.BORING, $sid: id),
+            collectList($sid)
+        )
+
+        Number(intValue > 2) from accumulate(
+            $e: SongListenedEvent(causerId == $cuid, songId memberOf $sameGenreSongsIds)
+            over window:time ( 120h ),
+            count($e)
+        )
+        $sameGenreSongs: List() from collect (Song(artist memberOf $artistsInSameGenreIds, status != Song.Status.BORING))
+
+        $risingStarsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, title == User.Title.RISING_STAR, $lid: username),
+            collectList($lid)
+        )
+        $risingStarsInSameGenreSongs: List() from collect(Song(artist memberOf $risingStarsInSameGenreIds, status != Song.Status.BORING))
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        Set recommended = new HashSet();
+        recommended.addAll(getTopNSongsByListens($sameGenreSongs, 2));
+        recommended.addAll(getTopNSongsByListens($risingStarsInSameGenreSongs, 3));
+        feedCreator.updateRecommendations($cuid, new ArrayList(recommended));
+end
+
+rule "Recommend songs of a genre that current user is unsure of"
+    when
+        $currentUser: User(title == User.Title.RISING_STAR, $cuid: username, $genre: genre)
+
+        // user skipped 5 songs of the same genre in last 10 days
+        $artistsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, $lid: username),
+            collectList($lid)
+        )
+        $sameGenreSongsIds: List() from accumulate (
+            Song(artist memberOf $artistsInSameGenreIds, status != Song.Status.BORING, $sid: id),
+            collectList($sid)
+        )
+        Number(intValue > 5) from accumulate(
+            $e: SongSkippedEvent(causerId == $cuid, songId memberOf $sameGenreSongsIds)
+            over window:time ( 240h ),
+            count($e)
+        )
+
+        // user liked 1 song of a Legend in the same genre
+        $legendsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, title == User.Title.LEGEND, $lid: username),
+            collectList($lid)
+        )
+        $legendsInSameGenreSongs: List() from collect(Song(artist memberOf $legendsInSameGenreIds, status != Song.Status.BORING))
+        $legendsInSameGenreSongIds: List() from accumulate(
+            Song(artist memberOf $legendsInSameGenreIds, status != Song.Status.BORING, $sid: id),
+            collectList($sid)
+        )
+        $legendaryArtistLikedSongsIds: List(size == 1) from accumulate (
+            SongLikedEvent(songId memberOf $legendsInSameGenreSongIds, causerId == $cuid, $sid: songId),
+            collectList($sid)
+        )
+        Song(id == $legendaryArtistLikedSongsIds.get(0), $legendArtist: artist)
+
+        // user has become a Rising star in the last month
+        Number(intValue > 0) from accumulate (
+            $e: UserTitleChangedEvent(causerId == $cuid, title == User.Title.RISING_STAR),
+            count($e)
+        )
+
+        $sameGenrePopularSongs: List() from collect (Song(artist memberOf $artistsInSameGenreIds, status == Song.Status.POPULAR))
+        $likedLegendSongs: List() from collect(Song(artist == $legendArtist, status != Song.Status.BORING))
+        $risingStarsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, title == User.Title.RISING_STAR, $cuid != username, $lid: username),
+            collectList($lid)
+        )
+        $risingStarsInSameGenreSongs: List() from collect(Song(artist memberOf $risingStarsInSameGenreIds, status != Song.Status.BORING))
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        Set recommended = new HashSet();
+        recommended.addAll(getTopNSongsByListens($sameGenrePopularSongs, 1));
+        recommended.addAll(getTopNSongsByListens($likedLegendSongs, 3));
+        recommended.addAll(getTopNSongsByListens($risingStarsInSameGenreSongs, 2));
+        feedCreator.updateRecommendations($cuid, new ArrayList(recommended));
+end
+
+rule "Recommend songs by similarity with other user"
+    when
+        $currentUser: User(title == User.Title.ANONYMOUS, $cuid: username)
+        $likedArtist: User(username != $cuid, $laid: username, $genre: genre)
+        $likedArtistSongIds: List(size > 0) from accumulate (
+            Song(artist == $laid, status != Song.Status.BORING, $sid: id),
+            collectList($sid)
+        )
+        $otherUser: User(username != $cuid, username != $laid, username != "Filler", $ouid: username)
+
+        Number(intValue >= 3) from accumulate (
+            $e: SongLikedEvent(causerId == $cuid, songId memberOf $likedArtistSongIds)
+            over window:time ( 240h ),
+            count($e)
+        )
+
+        Number(intValue >= 5) from accumulate (
+            $e: SongLikedEvent(causerId == $ouid, songId memberOf $likedArtistSongIds)
+            over window:time ( 480h ),
+            count($e)
+        )
+
+        $artistsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, $lid: username),
+            collectList($lid)
+        )
+        $sameGenrePopularSongs: List() from collect (Song(artist memberOf $artistsInSameGenreIds, status == Song.Status.POPULAR))
+
+        $legendsInSameGenreIds: List() from accumulate(
+            User(genre == $genre, title == User.Title.LEGEND, $lid: username),
+            collectList($lid)
+        )
+        $legendsInSameGenreSongs: List() from collect(Song(artist memberOf $legendsInSameGenreIds, status != Song.Status.BORING))
+
+        $songsLikedByOtherUserIds: List(size > 0) from accumulate (
+            $e: SongLikedEvent(causerId == $ouid, $sid: songId),
+            collectList($sid)
+        )
+        $songsLikedByOtherUser: List() from collect(Song(id memberOf $songsLikedByOtherUserIds, artist != $laid))
+    then
+        logger.debug("Fired rule: '{}'", drools.getRule().getName());
+        Set recommended = new HashSet();
+        recommended.addAll(getTopNSongsByListens($sameGenrePopularSongs, 1));
+        recommended.addAll(getTopNSongsByListens($legendsInSameGenreSongs, 2));
+        recommended.addAll(getTopNSongsByListens($songsLikedByOtherUser, 2));
+        for (Object o: $songsLikedByOtherUser) {
+            System.out.println(o);
+        }
+        feedCreator.updateRecommendations($cuid, new ArrayList(recommended));
+end
+
