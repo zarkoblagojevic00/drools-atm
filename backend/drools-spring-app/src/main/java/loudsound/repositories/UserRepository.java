@@ -21,11 +21,15 @@ public class UserRepository {
         users = new HashMap<>();
     }
 
+    public void addUser(User newUser) {
+        users.put(newUser.getUsername(), newUser);
+    }
+
     public User register(NewUserDTO newUserDTO) {
         if (users.containsKey(newUserDTO.getUsername()))
             throw new InvalidArgumentsException("User with given username already exists.");
         User user = new User(newUserDTO);
-        users.put(user.getUsername(), user);
+        addUser(user);
         return user;
     }
 

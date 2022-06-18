@@ -21,12 +21,16 @@ public class SongRepository {
         songs = new HashMap<>();
     }
 
+    public void addSong(Song newSong) {
+        songs.put(newSong.getId(), newSong);
+    }
+
     public Song release(NewSongDTO newSong) {
         if (checkIfSongExists(newSong)) {
             throw new InvalidArgumentsException("Song with the same title and artist already exists.");
         }
         Song song = new Song(newSong);
-        songs.put(song.getId(), song);
+        addSong(song);
         return song;
     }
 
@@ -49,4 +53,6 @@ public class SongRepository {
     public void update(Song existingSong) {
         songs.put(existingSong.getId(), existingSong);
     }
+
+
 }

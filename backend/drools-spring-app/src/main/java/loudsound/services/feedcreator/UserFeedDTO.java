@@ -1,4 +1,4 @@
-package loudsound.services;
+package loudsound.services.feedcreator;
 
 import java.util.Collection;
 

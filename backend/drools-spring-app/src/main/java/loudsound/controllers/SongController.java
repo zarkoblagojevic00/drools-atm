@@ -3,7 +3,7 @@ package loudsound.controllers;
 import loudsound.controllers.dtos.NewSongDTO;
 import loudsound.model.Song;
 import loudsound.services.SongService;
-import loudsound.services.UserFeedDTO;
+import loudsound.services.feedcreator.UserFeedDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -20,13 +20,13 @@ import loudsound.events.song.SongStatusChangedEvent;
 import loudsound.model.User;
 import loudsound.events.user.UserTitleChangedEvent;
 
-import loudsound.services.FeedCreator;
+import loudsound.services.feedcreator.FeedCreator;
 
 import org.slf4j.Logger;
 import org.drools.core.spi.KnowledgeHelper;
 
 global org.slf4j.Logger logger;
-global loudsound.services.FeedCreator feedCreator;
+global loudsound.services.feedcreator.FeedCreator feedCreator;
 
 function List getTopNSongsByListens(List songs, int n) {
     return  (List) songs.stream()
@@ -175,7 +175,7 @@ rule "Recommend songs by similarity with other user"
             Song(artist == $laid, status != Song.Status.BORING, $sid: id),
             collectList($sid)
         )
-        $otherUser: User(username != $cuid, username != $laid, username != "Filler", $ouid: username)
+        $otherUser: User(username != $cuid, username != $laid, username != "__CAUSER__", $ouid: username)
 
         Number(intValue >= 3) from accumulate (
             $e: SongLikedEvent(causerId == $cuid, songId memberOf $likedArtistSongIds)
