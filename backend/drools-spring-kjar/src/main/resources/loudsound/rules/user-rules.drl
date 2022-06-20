@@ -87,7 +87,7 @@ rule "User is declared a Rising Star (top chart activity)"
             Song($sid: id, artist == $uid),
             collectList($sid)
         )
-        Number(intValue > 2) from accumulate(
+        Number(intValue >= 2) from accumulate(
             $e: SongEnteredTopNEvent(songId memberOf $userReleasedSongIds)
             over window:time ( 4380h ),
             count($e)

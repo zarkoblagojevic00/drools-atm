@@ -1,12 +1,10 @@
 package loudsound;
 
 import loudsound.events.song.SongEnteredTopNEvent;
-import loudsound.events.song.SongLikedEvent;
-import loudsound.events.song.SongListeningEndedEvent;
-import loudsound.events.song.SongListeningStartedEvent;
 import loudsound.model.Song;
 import loudsound.setup.SongRulesKieStateInitializer;
 import loudsound.setup.TestKieSessionFactory;
+import loudsound.setup.TestUtil;
 import loudsound.stateinitializer.KieStateInitializer;
 import org.drools.core.ClassObjectFilter;
 import org.drools.core.time.SessionPseudoClock;
@@ -19,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,7 +28,6 @@ public class SongRulesTest {
 
     @BeforeEach
     public void initEach() {
-        System.out.println("BeforeEach initEach() method called");
         kieSession = TestKieSessionFactory.getSession(logger);
         kieClock = kieSession.getSessionClock();
     }
@@ -46,12 +42,13 @@ public class SongRulesTest {
         long likesNumber = song.getLikesNumber();
 
         //  act
-        kieSession.insert(new SongLikedEvent("T", new Date(kieClock.getCurrentTime()), SongRulesKieStateInitializer.SONG_ID));
-        kieSession.fireAllRules();
+        TestUtil.likeTestSong(kieSession);
 
         //  assert
         assertEquals(likesNumber + 1, song.getLikesNumber());
     }
+
+
 
     @DisplayName("Song is listened once")
     @Test
@@ -63,7 +60,7 @@ public class SongRulesTest {
         long timesListened = song.getTimesListenedNumber();
 
         //  act
-        insertListeningEventsWithTimeApart(10);
+        TestUtil.insertListeningEventsWithTimeApart(kieSession,10);
 
         //  assert
         assertEquals(timesListened + 1, song.getTimesListenedNumber());
@@ -79,7 +76,7 @@ public class SongRulesTest {
         long timesSkipped = song.getTimesSkippedNumber();
 
         //  act
-        insertListeningEventsWithTimeApart(2);
+        TestUtil.insertListeningEventsWithTimeApart(kieSession,2);
 
         //  assert
         assertEquals(timesSkipped + 1, song.getTimesSkippedNumber());
@@ -93,7 +90,7 @@ public class SongRulesTest {
         initializer.initializeState(kieSession);
 
         //  act
-        insertListeningEventsWithTimeApart(3);
+        TestUtil.insertListeningEventsWithTimeApart(kieSession,3);
 
         //  assert
         assertSongStatus(initializer, Song.Status.BORING);
@@ -108,7 +105,7 @@ public class SongRulesTest {
 
         //  act
         for (int i= 0; i < 9; i++) {
-            insertListeningEventsWithTimeApart(10);
+            TestUtil.insertListeningEventsWithTimeApart(kieSession,10);
         }
 
         //  assert
@@ -121,7 +118,7 @@ public class SongRulesTest {
         KieStateInitializer initializer = SongRulesKieStateInitializer.getSongsWithOneSongAboutToReachTopN();
         initializer.initializeState(kieSession);
 
-        insertListeningEventsWithTimeApart(10);
+        TestUtil.insertListeningEventsWithTimeApart(kieSession,10);
         assertOvertakingWasCorrect();
     }
 
@@ -129,12 +126,11 @@ public class SongRulesTest {
     @Test
     public void songIsDeclaredPopular() {
         //  arrange
-        KieStateInitializer initializer = SongRulesKieStateInitializer.getPopularSongInitializer();
+        KieStateInitializer initializer = SongRulesKieStateInitializer.getOkSongToBeDeclaredPopularInitializer();
         initializer.initializeState(kieSession);
 
         //  act
-//        kieSession.insert(new SongLikedEvent("T", SongRulesKieStateInitializer.SONG_ID));
-        kieSession.fireAllRules();
+        TestUtil.likeTestSong(kieSession);
 
         //  assert
         assertSongStatus(initializer, Song.Status.POPULAR);
@@ -166,7 +162,7 @@ public class SongRulesTest {
     }
 
     private void assertSongAboutToReachTopNReachedTopN(Collection<SongEnteredTopNEvent> events) {
-        assertTrue(events.stream().anyMatch(e -> e.getSongId().equals(SongRulesKieStateInitializer.SONG_ID) && !e.isRevoked()));
+        assertTrue(events.stream().anyMatch(e -> e.getSongId().equals(TestUtil.SONG_ID) && !e.isRevoked()));
     }
 
     private void assertCorrectSongWasOvertaken(Collection<SongEnteredTopNEvent> events) {
@@ -190,12 +186,7 @@ public class SongRulesTest {
         return (Collection<Song>) kieSession.getObjects(new ClassObjectFilter(Song.class));
     }
 
-    private void insertListeningEventsWithTimeApart(int timeInSeconds) {
-        kieSession.insert(new SongListeningStartedEvent("T", new Date(kieClock.getCurrentTime()), SongRulesKieStateInitializer.SONG_ID));
-        kieClock.advanceTime(timeInSeconds, TimeUnit.SECONDS);
-        kieSession.insert(new SongListeningEndedEvent("T", new Date(kieClock.getCurrentTime()), SongRulesKieStateInitializer.SONG_ID));
-        kieSession.fireAllRules();
-    }
+
 
     private void assertSongStatus(KieStateInitializer initializer, Song.Status status) {
         Song song = getSongFromSession(initializer);
@@ -204,9 +195,8 @@ public class SongRulesTest {
 
     private Song getSongFromSession(KieStateInitializer initializer) {
         FactHandle handle = initializer.getSongFactHandle(
-                SongRulesKieStateInitializer.ARTIST,
-                SongRulesKieStateInitializer.SONG_ID);
-        Song song = (Song) kieSession.getObject(handle);
-        return song;
+                TestUtil.ARTIST,
+                TestUtil.SONG_ID);
+        return (Song) kieSession.getObject(handle);
     }
 }
