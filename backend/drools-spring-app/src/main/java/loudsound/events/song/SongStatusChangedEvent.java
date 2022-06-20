@@ -25,6 +25,12 @@ public class SongStatusChangedEvent implements Serializable {
         this.status = status;
     }
 
+    public SongStatusChangedEvent(Date occurred, String songId, Song.Status status) {
+        this.occurred = occurred;
+        this.songId = songId;
+        this.status = status;
+    }
+
     public Date getOccurred() {
         return occurred;
     }
@@ -37,11 +43,6 @@ public class SongStatusChangedEvent implements Serializable {
         return status;
     }
 
-    public SongStatusChangedEvent(Date occurred, String songId, Song.Status status) {
-        this.occurred = occurred;
-        this.songId = songId;
-        this.status = status;
-    }
 }
 
 

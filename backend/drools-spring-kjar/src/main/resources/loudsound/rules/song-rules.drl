@@ -2,6 +2,7 @@ package loudsound.rules;
 dialect  "mvel"
 
 import java.util.List;
+import java.util.Date;
 
 import loudsound.model.Song;
 import loudsound.events.song.SongReleasedEvent;
@@ -23,7 +24,12 @@ rule "New song is released"
     when
         $song: Song()
     then
-        insert(new SongReleasedEvent($song.artist, $song.id))
+        insert(new SongReleasedEvent(
+            $song.artist,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id));
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
         logger.debug("New song released: '{} - {}'", $song.artist, $song.title);
 end
@@ -52,8 +58,13 @@ rule "Song is listened"
         $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[5s] $start)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongListenedEvent($scauser, $song.id));
         modify ($song) { listen() };
+        insert(new SongListenedEvent(
+            $scauser,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id));
         delete($start);
         delete($end);
         logger.debug(
@@ -72,10 +83,15 @@ rule "Song is skipped"
         $end: SongListeningEndedEvent($sid == songId, $scauser == causerId, this after[0s, 5s] $start)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongSkippedEvent($scauser, $song.id));
+        modify ($song) { skip() };
+        insert(new SongSkippedEvent(
+            $scauser,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id));
         delete($start);
         delete($end);
-        modify ($song) { skip() };
         logger.debug(
                 "Song: '{} - {}' was skipped {} times",
                 $song.artist,
@@ -85,15 +101,27 @@ rule "Song is skipped"
 end
 
 rule "Song is declared Boring"
-    lock-on-active
     when
         $song: Song(
+            $sid: id,
             status == Song.Status.OK,
-            timesListenedNumber > 1,
-            timesSkippedNumber > 1.5 * timesListenedNumber)
+            timesSkippedNumber > 1,
+            ((double) timesSkippedNumber / timesListenedNumber) > 2)
+
+        // timeout
+        Number(intValue == 0) from accumulate (
+            $e: SongStatusChangedEvent(songId == $sid,  status == Song.Status.BORING)
+            over window:time( 15m ),
+            count($e)
+        )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongStatusChangedEvent($song.id, Song.Status.BORING ));
+        insert(new SongStatusChangedEvent(
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id,
+            Song.Status.BORING ));
         modify ($song) { setStatus(Song.Status.BORING) };
         logger.debug(
                 "Song: '{} - {}' was declared {}",
@@ -104,11 +132,16 @@ rule "Song is declared Boring"
 end
 
 rule "Song is redeclared Ok"
-    lock-on-active
     when
         $song: Song(
             $sid: id,
             status == Song.Status.BORING
+        )
+        // timeout
+        Number(intValue == 0) from accumulate (
+            $e: SongStatusChangedEvent(songId == $sid, status == Song.Status.OK)
+            over window:time( 15m ),
+            count($e)
         )
         $listenedNum: Number() from accumulate(
             $e1: SongListenedEvent(songId == $sid)
@@ -122,7 +155,12 @@ rule "Song is redeclared Ok"
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongStatusChangedEvent($song.id, Song.Status.OK ));
+        insert(new SongStatusChangedEvent(
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id,
+            Song.Status.OK ));
         modify ($song) { setStatus(Song.Status.OK) };
         logger.debug(
                 "Song: '{} - {}' was declared {}",
@@ -145,7 +183,11 @@ rule "Song entered top N chart (when there are fewer songs than N)"
         $song: Song(id not memberOf $currentTopNSongIds)
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongEnteredTopNEvent($song.id));
+        insert(new SongEnteredTopNEvent(
+        new Date(drools.getWorkingMemory()
+            .getSessionClock()
+            .getCurrentTime()),
+        $song.id));
         logger.debug(
                 "Song: '{} - {}' reached topN",
                 $song.artist,
@@ -181,15 +223,13 @@ rule "Song entered top N chart (when there are more songs than N)"
         )
         $lastSongInCurrentTopNEvent: SongEnteredTopNEvent(songId == $lastSongInCurrentTopN.id, !revoked)
     then
-//        for (Object o: $currentTopNSongIds) {
-//            System.out.println(o);
-//        }
-//        System.out.println("------------------------------------------------------------");
-//        System.out.println("Last in top N: " + $lastSongInCurrentTopN);
-//        System.out.println("First in cand: " + $topSongInCandidates);
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
 
-        insert(new SongEnteredTopNEvent($topSongInCandidates.id));
+        insert(new SongEnteredTopNEvent(
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $topSongInCandidates.id));
         logger.debug(
                 "Song: '{} - {}' reached topN",
                 $topSongInCandidates.artist,
@@ -205,11 +245,16 @@ rule "Song entered top N chart (when there are more songs than N)"
 end
 
 rule "Song is declared Popular"
-    lock-on-active
     when
         $song: Song(
             $sid: id,
             status == Song.Status.OK
+        )
+        // timeout
+        Number(intValue == 0) from accumulate (
+            $e: SongStatusChangedEvent(songId == $sid, status == Song.Status.POPULAR)
+            over window:time( 15m ),
+            count($e)
         )
         Number(intValue == 1) from accumulate(
             $e1: SongEnteredTopNEvent(songId == $sid, !revoked)
@@ -223,7 +268,12 @@ rule "Song is declared Popular"
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongStatusChangedEvent($song.id, Song.Status.POPULAR ));
+        insert(new SongStatusChangedEvent(
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id,
+            Song.Status.POPULAR ));
         modify ($song) { setStatus(Song.Status.POPULAR) };
         logger.debug(
                 "Song: '{} - {}' was declared {}}",
@@ -234,20 +284,32 @@ rule "Song is declared Popular"
 end
 
 rule "Song is not Popular anymore"
-    lock-on-active
     when
         $song: Song(
             $sid: id,
             status == Song.Status.POPULAR
         )
-        Number(intValue >= 1) from accumulate(
-            $e: SongEnteredTopNEvent(songId == $sid, revoked)
+
+        // timeout
+        Number(intValue == 0) from accumulate (
+            $e: SongStatusChangedEvent(songId == $sid, status == Song.Status.OK)
+            over window:time( 15m ),
+            count($e)
+        )
+
+        Number(intValue == 0) from accumulate(
+            $e: SongEnteredTopNEvent(songId == $sid, !revoked)
             over window:time( 24h ),
             count($e)
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new SongStatusChangedEvent($song.id, Song.Status.OK ));
+        insert(new SongStatusChangedEvent(
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            $song.id,
+            Song.Status.OK ));
         modify ($song) { setStatus(Song.Status.OK) };
         logger.debug(
                 "Song: '{} - {}' was declared {}}",

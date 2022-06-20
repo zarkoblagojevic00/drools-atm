@@ -24,6 +24,12 @@ public class SongReleasedEvent implements Serializable {
         this.songId = songId;
     }
 
+    public SongReleasedEvent(String causerId, Date occurred, String songId) {
+        this.causerId = causerId;
+        this.occurred = occurred;
+        this.songId = songId;
+    }
+
     public String getCauserId() {
         return causerId;
     }

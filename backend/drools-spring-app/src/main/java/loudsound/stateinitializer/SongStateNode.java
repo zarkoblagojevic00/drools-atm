@@ -6,11 +6,12 @@ import loudsound.events.song.SongListenedEvent;
 import loudsound.events.song.SongSkippedEvent;
 import loudsound.model.Song;
 import org.kie.api.runtime.KieSession;
-import org.kie.api.runtime.rule.FactHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SongStateNode implements KieStateInitializable {
+import java.util.Date;
+
+public class SongStateNode extends KieStateNode implements KieStateInitializable  {
     private static final Logger logger = LoggerFactory.getLogger(SongStateNode.class);
     private static final String CAUSER = "__CAUSER__";
     private final Song song;
@@ -29,20 +30,26 @@ public class SongStateNode implements KieStateInitializable {
         return song;
     }
 
+
+
     @Override
     public void initializeState(KieSession session) {
         logger.info("Song initialization started: {} - {}", song.getArtist(), song.getTitle());
-        FactHandle songHandle = initializeSong(session);
+        initializeSong(session);
         initializeLikes(session);
-        initializeListens(session, songHandle);
-        initializeSkips(session, songHandle);
+        initializeListens(session);
+        initializeSkips(session);
         logger.info("Song initialization ended: {}", song);
     }
 
-    private FactHandle initializeSong(KieSession session) {
-        FactHandle songHandle = session.insert(song);
+    @Override
+    public String getStateNodeId() {
+        return song.getId();
+    }
+
+    private void initializeSong(KieSession session) {
+        factHandle = session.insert(song);
         session.fireAllRules();
-        return songHandle;
     }
 
     private void initializeLikes(KieSession session) {
@@ -52,33 +59,37 @@ public class SongStateNode implements KieStateInitializable {
     }
 
     private void likeSong(KieSession session) {
-        session.insert(new SongLikedEvent(CAUSER, song.getId()));
+        session.insert(new SongLikedEvent(CAUSER, getCurrentDate(session), song.getId()));
         session.fireAllRules();
     }
 
-    private void initializeListens(KieSession session, FactHandle songHandle) {
+    private void initializeListens(KieSession session) {
         for (int i = 0; i < timesListenedNumber; i++) {
-            listenSong(session, songHandle);
+            listenSong(session);
         }
     }
 
-    private void listenSong(KieSession session, FactHandle songHandle) {
+    private void listenSong(KieSession session) {
         song.listen();
-        session.update(songHandle, song);
-        session.insert(new SongListenedEvent(CAUSER, song.getId()));
+        session.update(factHandle, song);
+        session.insert(new SongListenedEvent(CAUSER, getCurrentDate(session), song.getId()));
         session.fireAllRules();
     }
 
-    private void initializeSkips(KieSession session, FactHandle songHandle) {
+    private void initializeSkips(KieSession session) {
         for (int i = 0; i < timesSkippedNumber; i++) {
-            skipSong(session, songHandle);
+            skipSong(session);
         }
     }
 
-    private void skipSong(KieSession session, FactHandle songHandle) {
+    private void skipSong(KieSession session) {
         song.skip();
-        session.update(songHandle, song);
-        session.insert(new SongSkippedEvent(CAUSER, song.getId()));
+        session.update(factHandle, song);
+        session.insert(new SongSkippedEvent(CAUSER, getCurrentDate(session), song.getId()));
         session.fireAllRules();
+    }
+
+    private Date getCurrentDate(KieSession session) {
+        return new Date(session.getSessionClock().getCurrentTime());
     }
 }

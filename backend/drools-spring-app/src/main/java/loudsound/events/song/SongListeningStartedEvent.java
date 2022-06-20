@@ -24,6 +24,12 @@ public class SongListeningStartedEvent {
         this.songId = songId;
     }
 
+    public SongListeningStartedEvent(String causerId, Date occurred, String songId) {
+        this.causerId = causerId;
+        this.occurred = occurred;
+        this.songId = songId;
+    }
+
     public String getCauserId() {
         return causerId;
     }

@@ -5,7 +5,6 @@ import org.kie.api.definition.type.Modifies;
 import org.kie.api.definition.type.PropertyReactive;
 
 import java.util.Date;
-import java.util.UUID;
 
 @PropertyReactive
 public class Song {
@@ -25,13 +24,29 @@ public class Song {
     private Status status;
 
     public Song(NewSongDTO newSong) {
-        this.id = UUID.randomUUID().toString();
         this.artist = newSong.getArtist();
         this.title = newSong.getTitle();
         this.length = newSong.getDuration();
 
         this.created = new Date();
         this.status = Status.OK;
+        this.id = setupId();
+    }
+
+    private String setupId() {
+        String[] nameSplit = artist.split(" ");
+        String[] titleSplit = title.split(" ");
+        StringBuilder builder = new StringBuilder();
+        for (String namePart: nameSplit) {
+            builder.append(namePart);
+            builder.append("-");
+        }
+        for (String titlePart: titleSplit) {
+            builder.append(titlePart);
+            builder.append("-");
+        }
+
+        return builder.toString().replaceAll(".$", "");
     }
 
     public String getId() {

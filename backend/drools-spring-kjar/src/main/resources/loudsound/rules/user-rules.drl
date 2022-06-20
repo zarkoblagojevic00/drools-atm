@@ -1,6 +1,8 @@
 package loudsound.rules;
 dialect  "mvel"
 
+import java.util.Date;
+
 import loudsound.model.User;
 import loudsound.events.user.UserCreatedEvent;
 import loudsound.events.user.UserTitleChangedEvent;
@@ -23,7 +25,12 @@ rule "New user is registered"
     when
         $user: User($username: username)
     then
-        insert(new UserCreatedEvent($username))
+        insert(new UserCreatedEvent(
+            $username,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime())
+            ));
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
         logger.debug("New user: {}", $user);
 end
@@ -53,7 +60,12 @@ rule "User is declared a Rising Star (song quantity, listens and likes)"
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new UserTitleChangedEvent($uid, User.Title.RISING_STAR ));
+        insert(new UserTitleChangedEvent(
+            $uid,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            User.Title.RISING_STAR ));
         modify ($user) { setTitle(User.Title.RISING_STAR) };
         logger.debug(
                 "Artist: {} was declared {}",
@@ -82,7 +94,12 @@ rule "User is declared a Rising Star (top chart activity)"
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new UserTitleChangedEvent($uid, User.Title.RISING_STAR ));
+        insert(new UserTitleChangedEvent(
+            $uid,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            User.Title.RISING_STAR ));
         modify ($user) { setTitle(User.Title.RISING_STAR) };
         logger.debug(
                 "Artist: {} was declared {}",
@@ -129,7 +146,12 @@ rule "User is revoked the title of a Rising Star"
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new UserTitleChangedEvent($uid, User.Title.ANONYMOUS ));
+        insert(new UserTitleChangedEvent(
+            $uid,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            User.Title.ANONYMOUS ));
         modify ($user) { setTitle(User.Title.ANONYMOUS) };
         logger.debug(
                 "Artist: {} was declared {}",
@@ -159,7 +181,12 @@ rule "User is declared a Legend"
         )
     then
         logger.debug("Fired rule: '{}'", drools.getRule().getName());
-        insert(new UserTitleChangedEvent($uid, User.Title.LEGEND ));
+        insert(new UserTitleChangedEvent(
+            $uid,
+            new Date(drools.getWorkingMemory()
+                .getSessionClock()
+                .getCurrentTime()),
+            User.Title.LEGEND ));
         modify ($user) { setTitle(User.Title.LEGEND) };
         logger.debug(
                 "Artist: {} was declared {}",

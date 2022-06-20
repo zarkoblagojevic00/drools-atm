@@ -25,6 +25,12 @@ public class UserTitleChangedEvent implements Serializable {
         this.occurred = new Date();
     }
 
+    public UserTitleChangedEvent(String causerId, Date occurred, User.Title title) {
+        this.causerId = causerId;
+        this.occurred = occurred;
+        this.title = title;
+    }
+
     public String getCauserId() {
         return causerId;
     }

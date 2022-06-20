@@ -22,6 +22,11 @@ public class UserBecamePopularEvent implements Serializable {
         this.occurred = new Date();
     }
 
+    public UserBecamePopularEvent(String causerId, Date occurred) {
+        this.causerId = causerId;
+        this.occurred = occurred;
+    }
+
     public String getCauserId() {
         return causerId;
     }

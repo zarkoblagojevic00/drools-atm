@@ -23,6 +23,11 @@ public class SongEnteredTopNEvent implements Serializable {
         this.revoked = false;
     }
 
+    public SongEnteredTopNEvent(Date occurred, String songId) {
+        this.occurred = occurred;
+        this.songId = songId;
+    }
+
     public Date getOccurred() {
         return occurred;
     }

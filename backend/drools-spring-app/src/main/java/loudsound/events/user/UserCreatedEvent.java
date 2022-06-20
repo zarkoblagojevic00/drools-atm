@@ -22,6 +22,11 @@ public class UserCreatedEvent implements Serializable {
         this.occurred = new Date();
     }
 
+    public UserCreatedEvent(String causerId, Date occurred) {
+        this.causerId = causerId;
+        this.occurred = occurred;
+    }
+
     public String getCauserId() {
         return causerId;
     }
