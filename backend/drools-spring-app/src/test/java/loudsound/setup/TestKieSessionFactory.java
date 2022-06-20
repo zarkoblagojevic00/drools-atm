@@ -1,5 +1,6 @@
 package loudsound.setup;
 
+import loudsound.services.feedcreator.FeedCreator;
 import org.drools.core.ClockType;
 import org.kie.api.KieBase;
 import org.kie.api.KieBaseConfiguration;
@@ -34,6 +35,13 @@ public class TestKieSessionFactory {
     public static KieSession getSession(Logger logger) {
         KieSession session = kbase.newKieSession(ksconf, null);
         session.setGlobal("logger", logger);
+        return session;
+    }
+
+    public static KieSession getSessionWithFeedCreator(Logger logger, FeedCreator feedCreator) {
+        KieSession session = kbase.newKieSession(ksconf, null);
+        session.setGlobal("logger", logger);
+        session.setGlobal("feedCreator", feedCreator);
         return session;
     }
 }

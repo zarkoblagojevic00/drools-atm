@@ -60,7 +60,7 @@ public class SongRulesTest {
         long timesListened = song.getTimesListenedNumber();
 
         //  act
-        TestUtil.insertListeningEventsWithTimeApart(kieSession,10);
+        TestUtil.listenTestSongFor(kieSession,10);
 
         //  assert
         assertEquals(timesListened + 1, song.getTimesListenedNumber());
@@ -76,7 +76,7 @@ public class SongRulesTest {
         long timesSkipped = song.getTimesSkippedNumber();
 
         //  act
-        TestUtil.insertListeningEventsWithTimeApart(kieSession,2);
+        TestUtil.listenTestSongFor(kieSession,2);
 
         //  assert
         assertEquals(timesSkipped + 1, song.getTimesSkippedNumber());
@@ -90,7 +90,7 @@ public class SongRulesTest {
         initializer.initializeState(kieSession);
 
         //  act
-        TestUtil.insertListeningEventsWithTimeApart(kieSession,3);
+        TestUtil.listenTestSongFor(kieSession,3);
 
         //  assert
         assertSongStatus(initializer, Song.Status.BORING);
@@ -105,7 +105,7 @@ public class SongRulesTest {
 
         //  act
         for (int i= 0; i < 9; i++) {
-            TestUtil.insertListeningEventsWithTimeApart(kieSession,10);
+            TestUtil.listenTestSongFor(kieSession,10);
         }
 
         //  assert
@@ -118,7 +118,7 @@ public class SongRulesTest {
         KieStateInitializer initializer = SongRulesKieStateInitializer.getSongsWithOneSongAboutToReachTopN();
         initializer.initializeState(kieSession);
 
-        TestUtil.insertListeningEventsWithTimeApart(kieSession,10);
+        TestUtil.listenTestSongFor(kieSession,10);
         assertOvertakingWasCorrect();
     }
 
@@ -170,7 +170,7 @@ public class SongRulesTest {
                 .filter(SongEnteredTopNEvent::isRevoked)
                 .findFirst().get().getSongId();
 
-        Collection<Song> songs = getSongsFromSession();
+        Collection<Song> songs = TestUtil.getSongsFromSession(kieSession);
         Song revokedSong = songs.stream()
                 .filter(s -> s.getId().equals(revokedSongId))
                 .findFirst().get();
@@ -181,12 +181,6 @@ public class SongRulesTest {
     private void assertNoSongsWithTimesListenedLessThanRevokedSong(Collection<Song> songs, Song revokedSong) {
         assertFalse(songs.stream().anyMatch(s-> s.getTimesListenedNumber() < revokedSong.getTimesListenedNumber()));
     }
-
-    private Collection<Song> getSongsFromSession() {
-        return (Collection<Song>) kieSession.getObjects(new ClassObjectFilter(Song.class));
-    }
-
-
 
     private void assertSongStatus(KieStateInitializer initializer, Song.Status status) {
         Song song = getSongFromSession(initializer);

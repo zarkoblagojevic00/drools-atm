@@ -37,7 +37,7 @@ public class UserRulesTest {
         initializer.initializeState(kieSession);
 
         //  act
-        TestUtil.insertListeningEventsWithTimeApart(kieSession, 10);
+        TestUtil.listenTestSongFor(kieSession, 10);
 
         // assert
         assertUserTitle(initializer, User.Title.RISING_STAR);
@@ -51,7 +51,7 @@ public class UserRulesTest {
         initializer.initializeState(kieSession);
 
         //  act
-        TestUtil.insertListeningEventsWithTimeApart(kieSession, 10);
+        TestUtil.listenTestSongFor(kieSession, 10);
 
         // assert
         assertUserTitle(initializer, User.Title.RISING_STAR);
@@ -67,7 +67,7 @@ public class UserRulesTest {
         //  act
         kieClock.advanceTime(5, TimeUnit.MINUTES);
         for (int i = 0; i < 4; i++) {
-            TestUtil.insertListeningEventsWithTimeApart(kieSession, 10);
+            TestUtil.listenTestSongFor(kieSession, 10);
         }
 
         for (int i = 0; i < 5; i++) {
@@ -91,7 +91,7 @@ public class UserRulesTest {
         //  act
         kieClock.advanceTime(5, TimeUnit.MINUTES);
         for (int i = 0; i < 6; i++) {
-            TestUtil.insertListeningEventsWithTimeApart(kieSession, 10);
+            TestUtil.listenTestSongFor(kieSession, 10);
         }
 
         for (int i = 0; i < 7; i++) {
@@ -113,7 +113,7 @@ public class UserRulesTest {
         initializer.initializeState(kieSession);
 
         //  act
-        TestUtil.insertListeningEventsWithTimeApart(kieSession, 10);
+        TestUtil.listenTestSongFor(kieSession, 10);
         TestUtil.likeTestSong(kieSession);
 
         // assert

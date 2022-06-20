@@ -95,7 +95,7 @@ rule "Recommend songs of a genre popular with current user that strives to be Ri
             over window:time ( 120h ),
             count($e)
         )
-        $sameGenreSongs: List() from collect (Song(artist memberOf $artistsInSameGenreIds, status != Song.Status.BORING))
+        $sameGenreSongs: List() from collect (Song(artist memberOf $artistsInSameGenreIds, status == Song.Status.POPULAR))
 
         $risingStarsInSameGenreIds: List() from accumulate(
             User(genre == $genre, title == User.Title.RISING_STAR, $lid: username),
