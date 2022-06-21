@@ -14,14 +14,102 @@
             <div class="content">
                 <div class="main-column main-column-left">
                     <div class="choose-and-register-user">
-                        <div class="choose-user"></div>
-                        <div class="register-user"></div>
+                        <div class="choose-user content-node">
+                            <div class="content-node-title-container">
+                                Choose user
+                            </div>
+                            <div class="all-users-container">
+                                <div
+                                    v-for="(user, idx) in users"
+                                    :key="idx"
+                                    class="user underline-container transition-ease-in"
+                                    :class="{
+                                        'user-active':
+                                            user.username === currentUser,
+                                    }"
+                                    @click="switchUser(user.username)"
+                                >
+                                    <div class="user-info-container">
+                                        <div class="user-username">
+                                            {{ user.username }}
+                                        </div>
+                                        <div class="user-genre-title-container">
+                                            <div class="user-genre">
+                                                {{
+                                                    user.genre.replace("_", " ")
+                                                }}
+                                            </div>
+                                            <div
+                                                class="user-title"
+                                                :class="{
+                                                    'user-title-anonymous':
+                                                        user.title ===
+                                                        'ANONYMOUS',
+                                                    'user-title-rising-star':
+                                                        user.title ===
+                                                        'RISING_STAR',
+                                                    'user-title-legend':
+                                                        user.title === 'LEGEND',
+                                                }"
+                                            >
+                                                {{
+                                                    user.title.replace("_", " ")
+                                                }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="register-user content-node">
+                            <div class="content-node-title-container">
+                                Register new user
+                            </div>
+                            <div class="register-user-form">
+                                <form class="form-wrapper">
+                                    <div class="control-wrapper">
+                                        <span class="input-label"
+                                            >Username*
+                                        </span>
+                                        <input
+                                            class="control transition-ease"
+                                            v-model="newUser.username"
+                                            type="text"
+                                            placeholder="Enter your username"
+                                        />
+                                    </div>
+                                    <div class="control-wrapper">
+                                        <span class="input-label">Genre* </span>
+                                        <select
+                                            class="control transition-ease"
+                                            v-model="newUser.genre"
+                                        >
+                                            <option
+                                                v-for="(genre, idx) in genres"
+                                                :key="idx"
+                                                :value="genre"
+                                            >
+                                                {{ genre }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="submit-container">
+                                        <input
+                                            class="submit-button clickable primary-comp transition-ease-in"
+                                            type="submit"
+                                            @click.prevent="registerUser"
+                                        />
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <div class="release-song"></div>
+                    <div class="release-song content-node"></div>
                 </div>
                 <div class="main-column main-column-right">
-                    <div class="recommended-songs"></div>
-                    <div class="other-songs"></div>
+                    <div class="recommended-songs content-node"></div>
+                    <div class="other-songs content-node"></div>
                 </div>
             </div>
         </div>
@@ -30,19 +118,37 @@
 
 <script>
 import swalToast from "@/mixins/swal-toast.js";
+import userMixin from "@/mixins/users-mixin.js";
+// import songService from "@/services/song-service.js";
 
 export default {
-    mixins: [swalToast],
+    mixins: [swalToast, userMixin],
     data() {
         return {
-            messages: [],
-            newMessage: {
-                content: "",
+            recommendedSongs: [],
+            otherSongs: [],
+            newSong: {
+                artist: "",
+                title: "",
+                duration: "",
             },
         };
     },
 
     methods: {
+        announce(message) {
+            this.toast.fire({
+                icon: "success",
+                title: message,
+            });
+        },
+        handleRequest(callback) {
+            try {
+                callback();
+            } catch (error) {
+                this.handle(error);
+            }
+        },
         handle(error) {
             this.toast.fire({
                 icon: "warning",
@@ -123,6 +229,19 @@ export default {
     display: flex;
 }
 
+.content-node {
+    background: var(--background);
+    border: 3px solid var(--background-lighter);
+    border-radius: 0.4em;
+}
+
+.content-node-title-container {
+    color: var(--control-border-color-focused);
+    font-size: 1.5rem;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 .main-column {
     margin: 5px;
     display: flex;
@@ -141,18 +260,16 @@ export default {
 
 .choose-user {
     flex: 45%;
-    border: 3px solid red;
+    max-height: 45%;
     margin-bottom: 8px;
 }
 
 .register-user {
     flex: 55%;
-    border: 3px solid red;
 }
 
 .release-song {
     flex: 55%;
-    border: 3px solid red;
 }
 
 .main-column-right {
@@ -163,13 +280,11 @@ export default {
 
 .recommended-songs {
     flex: 45%;
-    border: 3px solid red;
     margin-bottom: 8px;
 }
 
 .other-songs {
     flex: 55%;
-    border: 3px solid red;
 }
 
 .control {

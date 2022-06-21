@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+
 @Service
 @DependsOn({"stateInitializerService"})
 public class UserService {
@@ -26,5 +28,9 @@ public class UserService {
         kieSession.insert(newUser);
         kieSession.fireAllRules();
         return newUser;
+    }
+
+    public Collection<User> getUsers() {
+        return userRepo.getAllUsers();
     }
 }

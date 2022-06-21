@@ -1,0 +1,144 @@
+.all-users-container {
+    max-height: 84%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+.user {
+    min-height: 60px;
+    border-bottom: 2px solid var(--background-lighter);
+
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+    padding: 0 1em;
+    color: var(--control-border-color-focused);
+    cursor: pointer;
+}
+
+.user:hover {
+    background-color: #213349;
+}
+
+.underline-container {
+    background-image: -webkit-linear-gradient(
+            var(--primary-comp),
+            var(--primary-comp)
+        ),
+        -webkit-linear-gradient(transparent, transparent);
+    background-image: -moz-linear-gradient(
+            var(--primary-comp),
+            var(--primary-comp)
+        ),
+        -moz-linear-gradient(transparent, transparent);
+    background-image: -ms-linear-gradient(
+            var(--primary-comp),
+            var(--primary-comp)
+        ),
+        -ms-linear-gradient(transparent, transparent);
+    background-image: -o-linear-gradient(
+            var(--primary-comp),
+            var(--primary-comp)
+        ),
+        -o-linear-gradient(transparent, transparent);
+    background-image: linear-gradient(var(--primary-comp), var(--primary-comp)),
+        linear-gradient(transparent, transparent);
+}
+
+.user-active {
+    background-color: #213349;
+    background-size: 100% 2px, auto;
+    cursor: default;
+}
+
+.user-info-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1rem;
+}
+
+.user-username {
+    color: var(--primary-comp);
+}
+
+.user-genre-title-container {
+    width: 50%;
+    display: flex;
+    align-items: center;
+    text-transform: lowercase;
+}
+
+.user-genre {
+    width: 32%;
+    margin-right: 20px;
+    font-size: 0.95rem;
+    padding: 0.2em 0.1em;
+    border-radius: 0.35em;
+    border: 2px solid var(--primary-comp);
+    background: var(--background-lighter);
+    font-style: italic;
+}
+
+.user-title {
+    width: 50%;
+    color: var(--white);
+    font-size: 0.95rem;
+    padding: 0.34em 0.5em;
+    border-radius: 0.35em;
+}
+
+.user-title-anonymous {
+    background-color: var(--background-lighter);
+}
+
+.user-title-rising-star {
+    background-color: var(--primary);
+}
+
+.user-title-legend {
+    background: var(--primary-comp);
+}
+
+
+
+/* New user form */
+.register-user-form {
+    padding: 0 1.2em;
+    margin-top: 1em;
+}
+
+
+.input-label {
+    margin-top: 1em;
+    font-size: 1.05rem;
+    color: var(--primary-comp);
+}
+
+.control:focus {
+    border-color: var(--primary-comp);
+}
+
+.submit-container {
+    margin-top: 2.2em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.submit-button {
+    width: 50%;
+    font-size: 1.2rem;
+    padding: 0.5em;
+}
+
+select {
+    text-transform: lowercase;
+}
+
+select option {
+    -webkit-appearance: menulist-button;
+    background-color: var(--background);
+}

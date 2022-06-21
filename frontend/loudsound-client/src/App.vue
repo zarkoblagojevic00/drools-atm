@@ -15,6 +15,7 @@ export default {
 
 <style src="@/styles/root.css"></style>
 <style src="@/styles/swal.css"></style>
+<style src="@/styles/user.css"></style>
 <style>
 body {
     margin: 0;

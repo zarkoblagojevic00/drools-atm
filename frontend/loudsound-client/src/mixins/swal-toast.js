@@ -3,7 +3,7 @@ export default {
         return {
             toast: this.$swal.mixin({
                 toast: true,
-                position: "bottom-right",
+                position: "top-right",
                 iconColor: "white",
                 customClass: {
                     popup: "colored-toast",
