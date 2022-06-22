@@ -105,11 +105,95 @@
                             </div>
                         </div>
                     </div>
-                    <div class="release-song content-node"></div>
+                    <div class="release-song content-node">
+                        <div class="content-node-title-container">
+                            Release a song
+                        </div>
+                        <div class="register-user-form">
+                            <form class="form-wrapper">
+                                <div class="control-wrapper">
+                                    <span class="input-label"
+                                        >Artist* (selected by choosing a user)
+                                    </span>
+                                    <input
+                                        class="control transition-ease"
+                                        v-model="newSong.artist"
+                                        type="text"
+                                        disabled
+                                    />
+                                </div>
+                                <div class="control-wrapper">
+                                    <span class="input-label">Title* </span>
+                                    <input
+                                        class="control transition-ease"
+                                        v-model="newSong.title"
+                                        type="text"
+                                        placeholder="Enter song title"
+                                    />
+                                </div>
+                                <div class="control-wrapper">
+                                    <span class="input-label"
+                                        >Duration* (in seconds)
+                                    </span>
+                                    <input
+                                        class="control transition-ease"
+                                        v-model="newSong.duration"
+                                        type="number"
+                                        min="1"
+                                        step="1"
+                                        placeholder="Enter song duration"
+                                    />
+                                </div>
+                                <div class="submit-container">
+                                    <input
+                                        class="submit-button clickable primary-comp transition-ease-in"
+                                        type="submit"
+                                        @click.prevent="releaseSong"
+                                    />
+                                </div>
+                            </form>
+                        </div>
+                        <div class="logo-nav logo-promo">
+                            <img
+                                class="logo-img"
+                                alt="logo"
+                                src="@/assets/loudsound-icon.png"
+                            />
+                            <div class="app-name gradient-text">LoudSound</div>
+                        </div>
+
+                        <div class="promo gradient-text">
+                            One song away from your dreams coming true
+                        </div>
+                    </div>
                 </div>
                 <div class="main-column main-column-right">
-                    <div class="recommended-songs content-node"></div>
-                    <div class="other-songs content-node"></div>
+                    <div class="recommended-songs content-node">
+                        <div class="content-node-title-container">
+                            Recommended songs
+                        </div>
+                        <div class="songs-container">
+                            <song-interactor
+                                v-for="(songExpo, idx) in recommendedSongs"
+                                :key="idx"
+                                :songExpo="songExpo"
+                                :isPlaying="songPlayingId === songExpo.song.id"
+                            />
+                        </div>
+                    </div>
+                    <div class="other-songs content-node">
+                        <div class="content-node-title-container">
+                            Also popular
+                        </div>
+                        <div class="songs-container">
+                            <song-interactor
+                                v-for="(songExpo, idx) in otherSongs"
+                                :key="idx"
+                                :songExpo="songExpo"
+                                :isPlaying="songPlayingId === songExpo.song.id"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -119,21 +203,14 @@
 <script>
 import swalToast from "@/mixins/swal-toast.js";
 import userMixin from "@/mixins/users-mixin.js";
-// import songService from "@/services/song-service.js";
+import songMixin from "@/mixins/song-mixin.js";
+import SongInteractor from "@/components/SongInteractor.vue";
 
 export default {
-    mixins: [swalToast, userMixin],
-    data() {
-        return {
-            recommendedSongs: [],
-            otherSongs: [],
-            newSong: {
-                artist: "",
-                title: "",
-                duration: "",
-            },
-        };
+    components: {
+        SongInteractor,
     },
+    mixins: [swalToast, userMixin, songMixin],
 
     methods: {
         announce(message) {
@@ -177,7 +254,7 @@ export default {
 .logo-img {
     width: 64px;
     height: auto;
-    margin-right: 15px;
+    margin-right: 10px;
 }
 
 .app-name {
@@ -248,7 +325,7 @@ export default {
 }
 
 .main-column-left {
-    flex: 60%;
+    flex: 55%;
 }
 
 .choose-and-register-user {
@@ -269,7 +346,7 @@ export default {
 }
 
 .release-song {
-    flex: 55%;
+    flex: 40%;
 }
 
 .main-column-right {
@@ -280,11 +357,13 @@ export default {
 
 .recommended-songs {
     flex: 45%;
+    max-height: 45%;
     margin-bottom: 8px;
 }
 
 .other-songs {
     flex: 55%;
+    max-height: 52%;
 }
 
 .control {
@@ -318,9 +397,27 @@ export default {
     background: #555;
 }
 
+.logo-promo {
+    margin-top: 5em;
+    justify-content: center;
+}
+
+.promo {
+    font-size: 1.1rem;
+    margin-top: 0.5em;
+}
+
+.songs-container {
+    max-height: 84%;
+    padding: 0 0.6em;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
 @media screen and (min-device-width: 1200px) and (max-device-width: 1600px) and (-webkit-min-device-pixel-ratio: 1) {
     .top-nav {
-        padding: 5px 10px;
+        padding: 5px 2%;
     }
 
     .app-name {

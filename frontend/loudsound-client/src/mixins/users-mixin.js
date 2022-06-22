@@ -10,6 +10,7 @@ export default {
                 genre: "ROCK",
             },
             genres: ["ROCK", "JAZZ", "BLUES", "METAL", "COUNTRY", "RAP"],
+            likesMap: {},
         };
     },
     async created() {
@@ -18,16 +19,32 @@ export default {
         this.users = await usersResponse.json();
         this.currentUser =
             localStorage.getItem("currentUser") || this.users[0].username;
+        this.newSong.artist = this.currentUser;
+
+        this.likesMap =
+            JSON.parse(localStorage.getItem("likesMap")) ||
+            localStorage.setItem(
+                "likesMap",
+                JSON.stringify(
+                    this.users.reduce((prev, curr) => {
+                        prev[curr.username] = {};
+                        return prev;
+                    }, {})
+                )
+            );
     },
     methods: {
         switchUser(username) {
             this.currentUser = username;
             localStorage.setItem("currentUser", username);
+            this.newSong.artist = username;
+            location.reload();
         },
         registerUser() {
             this.handleRequest(() => {
                 this.validateUser();
                 this.tryRegisterUser();
+                this.updateLikesMap();
                 this.announce("User has been registered successfully.");
             });
         },
@@ -46,6 +63,10 @@ export default {
             }
             const registeredUser = await response.json();
             this.users.push(registeredUser);
+        },
+        updateLikesMap() {
+            this.likesMap[this.newUser.username] = {};
+            localStorage.setItem("likesMap", JSON.stringify(this.likesMap));
         },
     },
 };
