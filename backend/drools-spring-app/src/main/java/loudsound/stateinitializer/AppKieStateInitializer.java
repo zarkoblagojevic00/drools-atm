@@ -120,7 +120,7 @@ public class AppKieStateInitializer extends KieStateInitializer {
                                         30, 12, 0),
                                 new SongStateNode(
                                         new NewSongDTO("Arctic Monkeys", "Red Lights", 225),
-                                        5, 5, 0),
+                                        11, 9, 0),
                                 new SongStateNode(
                                         new NewSongDTO("Arctic Monkeys", "Riot Van", 200),
                                         4, 4, 0),
@@ -135,16 +135,16 @@ public class AppKieStateInitializer extends KieStateInitializer {
                         Arrays.asList(
                                 new SongStateNode(
                                         new NewSongDTO("The Strokes", "Adults are talking", 225),
-                                        5, 5, 0),
+                                        3, 1, 0),
                                 new SongStateNode(
                                         new NewSongDTO("The Strokes", "Bad Decisions", 200),
-                                        4, 4, 2),
+                                        2, 3, 2),
                                 new SongStateNode(
                                         new NewSongDTO("The Strokes", "At the Door", 212),
-                                        3, 3, 1),
+                                        0, 2, 1),
                                 new SongStateNode(
                                         new NewSongDTO("The Strokes", "Heart in a Cage", 222),
-                                        1, 1, 0)
+                                        1, 0, 0)
                         )
                 )
 
